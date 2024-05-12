@@ -1,5 +1,7 @@
 # CON-FOLD and FOLD-RM
-The implementation details of CON-FOLD and FOLD-RM algorithm and how to use it are described here. The target of these algorithms is to learn an answer set program for a classification task. Answer set programs are logic programs that permit negation of predicates and follow the stable model semantics for interpretation. 
+The implementation details of CON-FOLD and FOLD-RM algorithm and how to use it are described here. 
+FOLD-RM was developed by Huaduo Wang and was used as the starting point for CON-FOLD. the Git-Hub Repository for FOLD-RM is available here: https://github.com/hwd404/FOLD-RM
+The target of these algorithms is to learn an answer set program for a classification task. Answer set programs are logic programs that permit negation of predicates and follow the stable model semantics for interpretation. 
 
 ## Installation
 
