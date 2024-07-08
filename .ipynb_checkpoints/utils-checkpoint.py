@@ -1,4 +1,4 @@
-import random
+import random, re
 from algo import evaluate, justify, prune_rules
 from statistics import mean, stdev
 
@@ -131,10 +131,12 @@ def run_trials(data, model, num_trials=30):
     scores = []
     rule_counts = []  # To store the rule count for each trial
     model.rules = []
+    predicate_counts = []
     for i in range(num_trials):
         data_train, data_test = split_data(data, ratio=0.8)  # data splitting function
         X_test, Y_test = split_xy(data_test)
-        model.rules=[]
+        model.asp_rules=None
+        model.rules=None
         model.fit(data_train, ratio=0.5)  # Train model on training set
         Ystar_test_tuples = model.predict(X_test)  # Predict on test set
         Ystar_test = [y[0] for y in Ystar_test_tuples]  # Extract predicted labels
@@ -145,6 +147,11 @@ def run_trials(data, model, num_trials=30):
         rule_count = count_rules_in_model(model)  # Use the function to count rules in the model
         rule_counts.append(rule_count)  # Append rule count for this trial
 
+        model.asp()
+        predicate_count = num_predicates(model)
+        #print(f"Trial {i+1}: Predicate count = {predicate_count}")
+        predicate_counts.append(predicate_count)
+
     # Calculate average and standard deviation for scores and rule counts
     average_score = mean(scores)
     score_stdev = stdev(scores) if len(scores) >= 1 else 0
@@ -152,16 +159,21 @@ def run_trials(data, model, num_trials=30):
     average_rule_count = mean(rule_counts)
     rule_count_stdev = stdev(rule_counts) if len(rule_counts) >= 1 else 0
 
-    return average_score, score_stdev, average_rule_count, rule_count_stdev
+    average_predicate_count = mean(predicate_counts)
+    predicate_count_stdev = stdev(predicate_counts) if len(predicate_counts) >= 1 else 0
+
+    return average_score, score_stdev, average_rule_count, rule_count_stdev, average_predicate_count, predicate_count_stdev
+
 
 def run_pruned_trials(data, model, num_trials=30, confidence_threshold=0.75):
     scores = []
     rule_counts = []  # To store the rule count for each trial
-
+    predicate_counts = []
     for _ in range(num_trials):
         data_train, data_test = split_data(data, ratio=0.8)  # Split data into training and testing sets
         X_test, Y_test = split_xy(data_test)
-        model.rules=[]
+        model.asp_rules=None
+        model.rules=None
         model.fit(data_train, ratio=0.5)  # Train model on training set
 
         # Prune rules with confidence < threshold
@@ -176,6 +188,11 @@ def run_pruned_trials(data, model, num_trials=30, confidence_threshold=0.75):
         rule_count = count_rules_in_model(model)  # Count rules in the pruned model
         rule_counts.append(rule_count)  # Append rule count for this trial
 
+        model.asp()
+        predicate_count = num_predicates(model)
+        #print(f"Trial {i+1}: Predicate count = {predicate_count}")
+        predicate_counts.append(predicate_count)
+
     # Calculate average and standard deviation for scores and rule counts
     average_score = mean(scores)
     score_stdev = stdev(scores) if len(scores) >= 1 else 0
@@ -183,19 +200,24 @@ def run_pruned_trials(data, model, num_trials=30, confidence_threshold=0.75):
     average_rule_count = mean(rule_counts)
     rule_count_stdev = stdev(rule_counts) if len(rule_counts) >= 1 else 0
 
-    return average_score, score_stdev, average_rule_count, rule_count_stdev
+    average_predicate_count = mean(predicate_counts)
+    predicate_count_stdev = stdev(predicate_counts) if len(predicate_counts) >= 1 else 0
+
+    return average_score, score_stdev, average_rule_count, rule_count_stdev, average_predicate_count, predicate_count_stdev
+
 
 
 
 def run_improved_pruned_trials(data, model, num_trials=30, confidence_threshold=0.75, improvement_threshold=0.02):
     scores = []
     rule_counts = []  # To store the rule count for each trial
-
+    predicate_counts = []
     for i in range(num_trials):
         data_train, data_test = split_data(data, ratio=0.8)  # Split data into training and testing sets
         X_test, Y_test = split_xy(data_test)
         #print(f"confidence threshold: {confidence_threshold}, improvment threshold: {improvement_threshold}")
-        model.rules = []
+        model.asp_rules=None
+        model.rules=None
         model.confidence_fit(data_train, improvement_threshold=improvement_threshold)  # Train model on training set
         # Prune rules with confidence < threshold
         model.rules = prune_rules(model.rules, confidence_threshold)
@@ -209,6 +231,11 @@ def run_improved_pruned_trials(data, model, num_trials=30, confidence_threshold=
         rule_count = count_rules_in_model(model)  # Count rules in the pruned model
         rule_counts.append(rule_count)  # Append rule count for this trial
 
+        model.asp()
+        predicate_count = num_predicates(model)
+        #print(f"Trial {i+1}: Predicate count = {predicate_count}")
+        predicate_counts.append(predicate_count)
+
     # Calculate average and standard deviation for scores and rule counts
     average_score = mean(scores)
     score_stdev = stdev(scores) if len(scores) >= 1 else 0
@@ -216,7 +243,11 @@ def run_improved_pruned_trials(data, model, num_trials=30, confidence_threshold=
     average_rule_count = mean(rule_counts)
     rule_count_stdev = stdev(rule_counts) if len(rule_counts) >= 1 else 0
 
-    return average_score, score_stdev, average_rule_count, rule_count_stdev
+    average_predicate_count = mean(predicate_counts)
+    predicate_count_stdev = stdev(predicate_counts) if len(predicate_counts) >= 1 else 0
+
+    return average_score, score_stdev, average_rule_count, rule_count_stdev, average_predicate_count, predicate_count_stdev
+
 
 def count_rules_in_rule(rule):
     # Start with 1 for the current rule
@@ -391,13 +422,50 @@ def simplify_rule(rule):
     return head + ' :- ' + body
 
 
-def num_predicates(rules):
-    def _n_pred(rule):
-        return len(rule[1] + rule[2])
-    ret = 0
-    for r in rules:
-        ret += _n_pred(r)
-    return ret
+def num_predicates(model):
+    predicates = set()
+    
+    for rule in model.asp_rules:
+        # Remove confidence values
+        rule = re.sub(r'\[confidence:.*?\]', '', rule).strip()
+        
+        # Split the rule into parts
+        parts = rule.split(':-')
+        if len(parts) > 1:
+            body = parts[1].strip()
+            
+            # Split the body into individual predicates
+            body_predicates = re.split(r',\s*(?=\w+\()', body)
+            
+            for pred in body_predicates:
+                # Remove leading 'not'
+                pred = re.sub(r'^not\s+', '', pred)
+                
+                # Extract the main predicate and its conditions
+                match = re.match(r'(\w+\([^)]+\))(.*)$', pred)
+                if match:
+                    main_pred, conditions = match.groups()
+                    if conditions:
+                        conditions = conditions.strip(', ')
+                        if conditions and not conditions.startswith('not'):
+                            predicates.add(f"{main_pred}, {conditions}")
+                    else:
+                        predicates.add(main_pred)
+    
+    # Remove rule predicates and clean up remaining predicates
+    cleaned_predicates = set()
+    for pred in predicates:
+        if not pred.startswith('rule'):
+            # Remove 'not ab1(X)' and 'not ab2(X)' parts
+            cleaned_pred = re.sub(r',\s*not\s+ab[12]\(X\)', '', pred)
+            cleaned_predicates.add(cleaned_pred)
+    
+    # Print the list of predicates
+    #print("List of predicates:")
+    #for pred in sorted(cleaned_predicates):
+    #    print(f"- {pred}")
+    
+    return len(cleaned_predicates)
 
 
 def fitem(rules, attrs, x, it):
