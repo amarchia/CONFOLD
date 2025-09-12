@@ -35,18 +35,18 @@ for label, count in Counter(all_labels).items():
 from utils import split_data
 train_data, test_data = split_data(data, ratio=0.9, shuffle=True)
 
-# ===========================
+
 # Training
-# ===========================
+
 model.fit(train_data, ratio=0.9)
 model.confidence_fit(train_data, improvement_threshold=0.9)
 
 print("\nLearned Answer Set Program rules:\n")
 model.print_asp()
 
-# ===========================
+
 # Predicting over test_data
-# ===========================
+
 Y_pred = model.predict(test_data)
 
 
