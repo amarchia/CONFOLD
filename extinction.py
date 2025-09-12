@@ -1,7 +1,6 @@
 import sys
 import random
 random.seed(42)
-sys.path.insert(0, "/home/pabmevi/CONFOLD")
 
 import numpy as np
 from foldrm import Classifier
@@ -18,7 +17,7 @@ def extinction():
          "Wing.Length","Kipps.Distance","Secondary1","Tail.Length"]
 
     model = Classifier(attrs=attrs, numeric=nums, label='Trophic.Level')
-    data = model.load_data('/home/pabmevi/CONFOLD/FOLD-RM/data/Extinction/BirdstraitsIUCN.csv')
+    data = model.load_data('BirdstraitsIUCN.csv')
     print('\n% dataset', np.shape(data))
     return model, data
 
