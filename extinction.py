@@ -8,18 +8,25 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 import pandas as pd
 
 def extinction():
-    attrs = ["Mass", "HWI", 
-             "Beak.Length.nares", 
-             "Wing.Length", "LogRangeSize", 
-             "LogClutchSize", "LogNightLights", 
-             "LogHumanPopulationDensity"]
+    attrs = ["IslandEndemic","Mass","HWI","Habitat.x","Beak.Length.culmen","Beak.Length.nares"
+             ,"Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
+             "Tail.Length","RedlistCategory","Threat","LogRangeSize",
+             "LogBodyMass","Diet","Foraging","Migration","MatingSystem","NestPlacement","Territoriality",
+             "IslandDwelling","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
+             "Extinct_full","Extinct_partial","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
+             "Migr_dir_local","Migr_disp_full","Migr_disp_partial","Migr_disp_local","Migr_altitudinal",
+             "Irruptive","Nomad_full","Nomad_partial","Nomad_local","Resid_full","Resid_partial",
+             "Unknown","Uncertain","Migratory_status","Migratory_status_2","Migratory_status_3"
+]
     nums = ["Mass", "HWI",
-             "Beak.Length.nares", 
-             "Wing.Length", "LogRangeSize", "LogClutchSize", "LogNightLights", 
+             "Beak.Length.culmen","Beak.Length.nares"
+             ,"Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
+             "Tail.Length","RedlistCategory","Threat","LogRangeSize",
+             "LogBodyMass","LogClutchSize", "LogNightLights",
              "LogHumanPopulationDensity"]
 
     model = Classifier(attrs=attrs, numeric=nums, label="Threat")
-    data = model.load_data('AvoIUCNbehav.csv')
+    data = model.load_data('AvoIUCNbehavMig.csv')
     print('\n% dataset', np.shape(data))
     return model, data
 
