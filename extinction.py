@@ -33,9 +33,12 @@ def extinction():
 
 model, data = extinction()
 
-# Mostrar distribución de clases en todo el dataset
+
+# Mostrar clases únicas y distribución de clases en todo el dataset
 from collections import Counter
 all_labels = [row[-1] for row in data]
+clases_unicas = set(all_labels)
+print("Clases únicas en 'Threat':", clases_unicas)
 print("\nDistribución de clases en todo el dataset:")
 for label, count in Counter(all_labels).items():
      print(f"{label}: {count}")
@@ -114,8 +117,6 @@ if pred_classes:
      print(df_cm)
 else:
      print("\nNo hay predicciones válidas para matriz de confusión.")
-
-
 
 
 
