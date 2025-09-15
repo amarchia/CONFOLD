@@ -31,7 +31,14 @@ def extinction():
     return model, data
 
 
+
 model, data = extinction()
+
+# Mostrar filas donde Threat no es 0 ni 1
+print("\nFilas donde 'Threat' no es 0 ni 1:")
+for row in data:
+     if row[-1] not in ["0", "1", 0, 1]:
+          print(row)
 
 
 # Mostrar clases únicas y distribución de clases en todo el dataset
