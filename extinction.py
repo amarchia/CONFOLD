@@ -19,7 +19,7 @@ def extinction():
              "Wing.Length", "LogRangeSize", "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
 
-    model = Classifier(attrs=attrs, numeric=nums, label="Threat")
+    model = Classifier(attrs=attrs, numeric=nums, label="status")
     data = model.load_data('AvoIUCNbehav.csv')
     print('\n% dataset', np.shape(data))
     return model, data
