@@ -10,7 +10,7 @@ import pandas as pd
 def extinction():
     attrs = ["Mass", "HWI", "Habitat.x", 
              "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
-             "Wing.Length", "LogRangeSize", "Diet", 
+             "Wing.Length", "LogRangeSize", 
              "Foraging", 
              "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
