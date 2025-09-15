@@ -10,15 +10,13 @@ import pandas as pd
 def extinction():
     attrs = ["Mass", "HWI", "Habitat.x", 
              "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
-             "Wing.Length", 
-             "LogRangeSize", "Diet", 
-             "Foraging", "Migration", "MatingSystem", "NestPlacement", 
+             "Wing.Length", "LogRangeSize", "Diet", 
+             "Foraging", 
              "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
     nums = ["Mass", "HWI",
              "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
-             "Wing.Length", 
-             "LogRangeSize", "LogClutchSize", "LogNightLights", 
+             "Wing.Length", "LogRangeSize", "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
 
     model = Classifier(attrs=attrs, numeric=nums, label="Threat")
@@ -67,7 +65,10 @@ def contar_variables_en_reglas(asp_rules, attrs):
 asp_rules = model.asp()
 var_counter = contar_variables_en_reglas(asp_rules, model.attrs)
 print("\nRanking de variables más usadas en las reglas aprendidas:")
-for var, count in var_counter.most_common():
+
+# Mostrar todas las variables, incluso las que no aparecen en ninguna regla
+for var in model.attrs:
+     count = var_counter.get(var, 0)
      print(f"{var}: {count} apariciones")
 
 
