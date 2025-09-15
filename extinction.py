@@ -10,7 +10,7 @@ import pandas as pd
 def extinction():
     attrs = ["IslandEndemic","Mass","HWI","Habitat.x","Beak.Length.culmen","Beak.Length.nares"
              ,"Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
-             "Tail.Length","RedlistCategory","Threat","LogRangeSize",
+             "Tail.Length","RedlistCategory","LogRangeSize",
              "LogBodyMass","Diet","Foraging","Migration","MatingSystem","NestPlacement","Territoriality",
              "IslandDwelling","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
              "Extinct_full","Extinct_partial","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
