@@ -8,16 +8,21 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 import pandas as pd
 
 def extinction():
-    attrs = ["Mass","HWI","Habitat",
-         "LAT","Beak.Length.culmen",
-         "Beak.Length.nares","Beak.Width","Beak.Depth","Tarsus.Length",
-         "Wing.Length","Kipps.Distance","Secondary1","Tail.Length"]
-    nums = ["Mass","HWI","LAT","Beak.Length.culmen",
-         "Beak.Length.nares","Beak.Width","Beak.Depth","Tarsus.Length",
-         "Wing.Length","Kipps.Distance","Secondary1","Tail.Length"]
+    attrs = ["Mass", "HWI", "Habitat.x", 
+             "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
+             "Wing.Length", "Kipps.Distance", "Secondary1", 
+             "LogRangeSize", "Diet", 
+             "Foraging", "Migration", "MatingSystem", "NestPlacement", 
+             "LogClutchSize", "LogNightLights", 
+             "LogHumanPopulationDensity"]
+    nums = ["Mass", "HWI",
+             "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
+             "Wing.Length", "Kipps.Distance", "Secondary1", 
+             "LogRangeSize", "LogClutchSize", "LogNightLights", 
+             "LogHumanPopulationDensity"]
 
-    model = Classifier(attrs=attrs, numeric=nums, label='Trophic.Level')
-    data = model.load_data('BirdstraitsIUCN.csv')
+    model = Classifier(attrs=attrs, numeric=nums, label="Threat")
+    data = model.load_data('AvoIUCNbehav.csv')
     print('\n% dataset', np.shape(data))
     return model, data
 
@@ -40,9 +45,31 @@ model.fit(train_data, ratio=0.9)
 model.confidence_fit(train_data, improvement_threshold=0.9)
 
 print("\nLearned Answer Set Program rules:\n")
+
 model.print_asp()
 
-# Predicting over test_data
+# --- Ranking de variables más usadas en reglas ---
+from collections import Counter
+import re
+
+def contar_variables_en_reglas(asp_rules, attrs):
+     var_counter = Counter()
+     # Buscar nombres de atributos en cada regla ASP
+     for rule in asp_rules:
+          for attr in attrs:
+               # Buscar el nombre del atributo en formato bajo (como en las reglas)
+               attr_key = attr.lower().replace(' ', '_')
+               # Buscar coincidencias tipo attr_key(X,...) en la regla
+               if re.search(rf'\b{attr_key}\s*\(', rule):
+                    var_counter[attr] += 1
+     return var_counter
+
+asp_rules = model.asp()
+var_counter = contar_variables_en_reglas(asp_rules, model.attrs)
+print("\nRanking de variables más usadas en las reglas aprendidas:")
+for var, count in var_counter.most_common():
+     print(f"{var}: {count} apariciones")
+
 
 Y_pred = model.predict(test_data)
 
@@ -52,11 +79,9 @@ for i, (pred, obs) in enumerate(zip(Y_pred[:10], test_data[:10])):
 
 # Matriz de confusión
 
-# Extraer clases predichas y etiquetas reales, filtrando None
 pred_classes = [p[0] for p in Y_pred if p is not None and p[0] is not None]
 true_classes = [row[-1] for p, row in zip(Y_pred, test_data) if p is not None and p[0] is not None]
 
-# Obtener todas las categorías presentes en el test
 all_labels = sorted(list(set(true_classes + pred_classes)))
 
 if pred_classes:
