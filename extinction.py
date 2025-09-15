@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 import pandas as pd
 
 def extinction():
-    attrs = ["Mass", "HWI", "Habitat.x", 
+    attrs = ["Mass", "HWI", 
              "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
              "Wing.Length", "LogRangeSize", 
              "Foraging", 
