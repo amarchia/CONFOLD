@@ -9,13 +9,13 @@ import pandas as pd
 
 def extinction():
     attrs = ["Mass", "HWI", 
-             "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
+             "Beak.Length.nares", 
              "Wing.Length", "LogRangeSize", 
              "Foraging", 
              "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
     nums = ["Mass", "HWI",
-             "Beak.Length.nares", "Beak.Width", "Beak.Depth", "Tarsus.Length",
+             "Beak.Length.nares", 
              "Wing.Length", "LogRangeSize", "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
 
