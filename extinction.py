@@ -11,7 +11,6 @@ def extinction():
     attrs = ["Mass", "HWI", 
              "Beak.Length.nares", 
              "Wing.Length", "LogRangeSize", 
-             "Foraging", 
              "LogClutchSize", "LogNightLights", 
              "LogHumanPopulationDensity"]
     nums = ["Mass", "HWI",
