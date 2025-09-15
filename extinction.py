@@ -35,7 +35,23 @@ for label, count in Counter(all_labels).items():
      print(f"{label}: {count}")
 
 from utils import split_data
+
 train_data, test_data = split_data(data, ratio=0.9, shuffle=True)
+
+# --- Balanceo de clases por submuestreo ---
+from collections import defaultdict
+def balancear_clases(data):
+     clases = defaultdict(list)
+     for row in data:
+          clases[row[-1]].append(row)
+     min_count = min(len(v) for v in clases.values())
+     balanced = []
+     for v in clases.values():
+          balanced.extend(random.sample(v, min_count))
+     random.shuffle(balanced)
+     return balanced
+
+train_data = balancear_clases(train_data)
 
 # Training
 
