@@ -12,7 +12,7 @@ import pandas as pd
 
 def extinction():
     attrs = ["order","family","latitude","longitude","elevation",
-             "acclimation_temp","acclimation_time","life_stage_tested",
+             "acclimation_temp","acclimation_time",
              "medium_test_temp","start_temp","ramping","mean_UTL"
 ]
     nums = ["latitude","longitude","elevation",
