@@ -12,15 +12,12 @@ from foldrm import Classifier
 
 def globalbirds_rates():
     attrs = ["road_length","survey_days","country","decimalLatitude","decimalLongitude",
-             "IslandEndemic","Volancy","Mass","HWI","Habitat.x","Trophic.Level",
-             "Trophic.Niche","Beak.Length.culmen","Beak.Length.nares",
-             "Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
+             "IslandEndemic","Mass","HWI","Habitat.x","Trophic.Niche","Beak.Length.culmen",
+             "Beak.Length.nares","Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
              "Tail.Length","LogRangeSize","Diet","Foraging","Migration","MatingSystem","NestPlacement",
-             "Territoriality","IslandDwelling","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
-             "Extinct_full","Extinct_partial","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
-             "Migr_dir_local","Migr_disp_full","Migr_disp_partial","Migr_disp_local","Migr_altitudinal",
-             "Irruptive","Nomad_full","Nomad_partial","Nomad_local","Resid_full","Resid_partial",
-             "Unknown","Uncertain","Migratory_status","Migratory_status_2","Migratory_status_3"
+             "Territoriality","IslandDwelling","LogClutchSize","LogNightLights",
+             "LogHumanPopulationDensity","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
+             "Migratory_status","Migratory_status_2","Migratory_status_3"
 ]
     nums = ["road_length","survey_days","decimalLatitude","decimalLongitude",
              "Mass","HWI","Beak.Length.culmen","Beak.Length.nares",
