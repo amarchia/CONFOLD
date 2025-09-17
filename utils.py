@@ -268,11 +268,18 @@ def count_rules_in_model(model):
 
 
 def load_data(file, attrs, label, numerics, amount=-1):
-    f = open(file, 'r')
+    try:
+        f = open(file, 'r', encoding='utf-8')
+        lines = f.readlines()
+        f.close()
+    except UnicodeDecodeError:
+        f = open(file, 'r', encoding='latin-1')
+        lines = f.readlines()
+        f.close()
     attr_idx, num_idx, lab_idx = [], [], -1
     ret, i, k = [], 0, 0
     head = ''
-    for line in f.readlines():
+    for line in lines:
         if i == 0:
             line = line.strip('\n').split(',')
             attr_idx = [j for j in range(len(line)) if line[j] in attrs]
