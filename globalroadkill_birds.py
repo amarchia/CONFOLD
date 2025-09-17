@@ -16,8 +16,7 @@ def globalbirds_rates():
              "Beak.Length.nares","Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
              "Tail.Length","LogRangeSize","Diet","Foraging","Migration","MatingSystem","NestPlacement",
              "Territoriality","IslandDwelling","LogClutchSize","LogNightLights",
-             "LogHumanPopulationDensity","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
-             "Migratory_status","Migratory_status_2","Migratory_status_3"
+             "LogHumanPopulationDensity"
 ]
     nums = ["road_length","survey_days","decimalLatitude","decimalLongitude",
              "Mass","HWI","Beak.Length.culmen","Beak.Length.nares",
