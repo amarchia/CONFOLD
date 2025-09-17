@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 import pandas as pd
 
 def extinction():
-    attrs = ["order","family","species","IUCN_status","latitude","longitude","elevation",
+    attrs = ["order","family","species","latitude","longitude","elevation",
              "acclimation_temp","acclimation_time","life_stage_tested",
              "medium_test_temp","start_temp","ramping","mean_UTL"
 ]
