@@ -1,7 +1,10 @@
+
 import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
+print("PYTHONPATH:", sys.path)  # Línea opcional para depuración
 import random
 random.seed(42)
-
 import numpy as np
 from foldrm import Classifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
@@ -17,7 +20,7 @@ def extinction():
              "medium_test_temp","start_temp","ramping","mean_UTL"]
 
     model = Classifier(attrs=attrs, numeric=nums, label="IUCN_status")
-    data = model.load_data('/data/Extinction/Pottieretal2022_ampthermtoler.csv')
+    data = model.load_data('/home/pabmevi/CONFOLD/FOLD-RM/data/Extinction/Pottieretal2022_ampthermtoler.csv')
     print('\n% dataset', np.shape(data))
     return model, data
 
