@@ -25,7 +25,7 @@ def globalbirds_rates():
     nums = ["road_length","survey_days","decimalLatitude","decimalLongitude",
              "Mass","HWI","Beak.Length.culmen","Beak.Length.nares",
              "Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
-             "Tail.Length","Threat","LogRangeSize","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
+             "Tail.Length","LogRangeSize","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
 ]
     model = Classifier(attrs=attrs, numeric=nums, label='rate_category')
     data = model.load_data('BirdsGlobalrk_traits.csv')
