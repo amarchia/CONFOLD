@@ -12,12 +12,11 @@ from foldrm import Classifier
 
 def globalbirds_rates():
     attrs = ["road_length","survey_days","country","decimalLatitude","decimalLongitude",
-             "status","IslandEndemic","Volancy","Mass","HWI","Habitat.x","Trophic.Level",
+             "IslandEndemic","Volancy","Mass","HWI","Habitat.x","Trophic.Level",
              "Trophic.Niche","Beak.Length.culmen","Beak.Length.nares",
              "Beak.Width","Beak.Depth","Tarsus.Length","Wing.Length","Kipps.Distance","Secondary1",
-             "Tail.Length","RedlistCategory","Threat","LogRangeSize",
-             "Diet","Foraging","Migration","MatingSystem","NestPlacement","Territoriality"
-             ,"Habitat.y","IslandDwelling","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
+             "Tail.Length","LogRangeSize","Diet","Foraging","Migration","MatingSystem","NestPlacement",
+             "Territoriality","Habitat.y","IslandDwelling","LogClutchSize","LogNightLights","LogHumanPopulationDensity",
              "Extinct_full","Extinct_partial","Marine_full","Marine_partial","Migr_dir_full","Migr_dir_partial",
              "Migr_dir_local","Migr_disp_full","Migr_disp_partial","Migr_disp_local","Migr_altitudinal",
              "Irruptive","Nomad_full","Nomad_partial","Nomad_local","Resid_full","Resid_partial",
