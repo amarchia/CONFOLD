@@ -20,7 +20,7 @@ def extinction():
              "medium_test_temp","start_temp","ramping","mean_UTL"]
 
     model = Classifier(attrs=attrs, numeric=nums, label="IUCN_status")
-    data = model.load_data('/home/pabmevi/CONFOLD/FOLD-RM/data/Extinction/Pottieretal2022_ampthermtoler.csv')
+    data = model.load_data('/home/pabmevi/CONFOLD/FOLD-RM/data/Extinction/Pottieretal2022_ampthermtoler1.csv')
     print('\n% dataset', np.shape(data))
     return model, data
 
