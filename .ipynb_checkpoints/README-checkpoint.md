@@ -1,154 +1,167 @@
-# CON-FOLD and FOLD-RM
-The implementation details of CON-FOLD and FOLD-RM algorithm and how to use it are described here. The target of these algorithms is to learn an answer set program for a classification task. Answer set programs are logic programs that permit negation of predicates and follow the stable model semantics for interpretation. 
+# CON-FOLD: An Explainable Learning Algorithm with Confidence and Domain Knowledge
+CON-FOLD is a Python implementation of an explainable machine learning algorithm that extends the original FOLD-RM algorithm. It generates human-readable logic rules for classification tasks and introduces two key enhancements:
+
+1.  **Confidence Scores:** Every prediction is accompanied by a confidence value, allowing users to gauge the model's certainty.
+2.  **Domain Knowledge Injection:** You can easily inject expert knowledge into the model using simple, human-readable rule strings. The algorithm then learns around this expert knowledge, combining human intuition with machine learning.
+
+This repository is based on the original FOLD-RM work by Huaduo Wang, available [here](https://github.com/hwd404/FOLD-RM).
+
+## Key Features
+
+*   **Explainable by Design:** The model's output is a set of logic rules that are easy for humans to understand and verify.
+*   **Confidence-Aware:** Provides confidence scores for its predictions using the Wilson score interval.
+*   **Expert-in-the-Loop:** Seamlessly integrate expert knowledge to improve model accuracy and interpretability.
+*   **Handles Mixed Data:** Works directly with both numerical and categorical data without requiring one-hot encoding.
 
 ## Installation
 
-Only function library for FOLD-RM:
-<code>
-	
-	python3 -m pip install foldrm
-	
-</code>
+1.  Clone the repository to your local machine:
+    ```bash
+    git clone https://github.com/lachlanmcg123/CONFOLD.git
+    cd CONFOLD
+    ```
 
-With the dataset examples:
-<code>
-	
-	git clone https://github.com/hwd404/FOLD-RM.git
-	
-</code>
+2.  Install the required Python libraries using the `requirements.txt` file:
+    ```bash
+    pip install -r requirements.txt
+    ```    
+    You may also need to download the SpaCy English model if you are doing natural language processing:
+    ```bash
+    python -m spacy download en_core_web_sm
+    ```
 
-### Prerequisites
-The CON-FOLD and FOLD-RM algorithm is developed with python3.10.
+## Quick Start: Adding Expert Rules
 
-## Instruction
-### Data preparation
+The core feature of CON-FOLD is adding domain knowledge. You can provide rules with a pre-defined confidence, or let the model learn the confidence for you.
 
-The CON-FOLD and FOLD-RM take tabular data as input, the first line for the tabular data should be the feature names of each column.
-The algorithms do not have to encode the data for training. It can deal with numerical, categorical, and even mixed type features (one column contains both categorical and numerical values) directly.
-However, the numerical features should be identified before loading the data, otherwise they would be dealt like categorical features (only literals with = and != would be generated).
+### Option 1: Provide a Rule with a Confidence Score
 
-There are many UCI example datasets that have been used to pre-populate the **data** directory. Code for preparing these datasets has already been added to datasets.py.
+If you are confident in your rule, you can specify its confidence directly.
 
-For example, the UCI wine dataset can be loaded with the following code:
+```python
+# Define and add your expert rule with a specific confidence
+expert_rule = "with confidence 0.95 class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+model.add_manual_rule(expert_rule, model.attrs, model.numeric, labels=['yes', 'no'])
 
-<code>
-	
-    attrs = ['alcohol','malic_acid','ash','alcalinity_of_ash','magnesium','tot_phenols','flavanoids',
-    'nonflavanoid_phenols','proanthocyanins','color_intensity','hue','OD_of_diluted','proline']
-    model = Classifier(attrs=attrs, numeric=attrs, label='label')
-    data = model.load_data('data/wine/wine.csv')
-    print('\n% wine dataset', np.shape(data))
-    return model, data
+# The model will use this confidence value directly
+model.fit(data_train)
+```
 
-</code>
+### Option 2: Let CON-FOLD Learn the Confidence
+If you know a rule is correct but are unsure of its exact confidence, simply leave it out. CON-FOLD will calculate it from the training data when you call .fit().
+```python
+# 1. Define a rule WITHOUT a confidence value
+rule_without_confidence = "class = 'no' if 'beak' '==' 'Curved'"
 
-**attrs** lists all the features needed, **nums** lists all the numerical features, **label** is the name of the output classification label, **model** is an initialized classifier object with the configuration of wine dataset. 
+# 2. Add the rule. It will be assigned a default confidence of 0.5 for now.
+model.add_manual_rule(rule_without_confidence, model.attrs, model.numeric, labels=['yes', 'no'])
 
-### Training
-The CON-FOLD and FOLD-RM algorithms generate explainable models that are represented by an answer set program for classification tasks. Here's a training example for wine dataset:
+# 3. Fit the model. 
+# CON-FOLD will now calculate the true confidence of your rule from the data.
+model.fit(data_train)
 
-<code>
-	
-    model.fit(X_train, Y_train, ratio=0.9)
-	
-</code>
+# 4. Print the rules to see the newly learned confidence score.
+model.print_asp(simple=True)
+```
 
-Note that the hyperparameter **ratio** in **fit** function can be set by the user, and ranges between 0 and 1. Default value is 0.5. This hyperparameter represents the ratio of training examples that are part of the exception to the examples implied by only the default conclusion part of the rule. We recommend that the user experiment with this hyperparameter by trying different values to produce a ruleset with the best F1 score. A range between 0.5 and 0.9 is recommended for experimentation.
+## Advanced Usage: Pruning and Rule Files
 
-The rules generated will be stored in the model object. These rules are organized in a nested intermediate representation. The nested rules will be automatically flattened and decoded to conform to the syntax of answer set programs by calling **print_asp** function: 
+CON-FOLD includes methods for pruning the learned ruleset to create simpler, more robust models. This helps to prevent overfitting and can improve the interpretability of the final model.
 
-<code>
-	
-    model.print_asp()
-	
-</code>
+### Pruning Learned Rules
 
-An answer set program, compatible with the s(CASP) answer set programming system, is printed as shown below. The s(CASP) system is a system for direclty executing predicate answer set programs in a query-driven manner.
+There are two primary methods for pruning:
 
-<code>
+**1. Post-Hoc Confidence Pruning**
 
-    % wine dataset (178, 14)
-    label(X,'1') :- rule2(X), not rule1(X). 
-    label(X,'2') :- rule1(X). 
-    label(X,'2') :- rule4(X), not rule1(X), not rule2(X), not rule3(X). 
-    label(X,'2') :- rule5(X), not rule1(X), not rule2(X), not rule3(X), not rule4(X). 
-    label(X,'3') :- rule3(X), not rule1(X), not rule2(X). 
-    rule1(X) :- color_intensity(X,N9), N9=<3.4. 
-    rule2(X) :- flavanoids(X,N6), N6>2.03, not ab1(X). 
-    rule3(X) :- flavanoids(X,N6), N6=<1.57, not ab2(X). 
-    rule4(X) :- alcohol(X,N0), N0>11.56. 
-    rule5(X) :- alcohol(X,N0), N0=<11.56. 
-    ab1(X) :- proline(X,N12), N12=<678.0. 
-    ab2(X) :- hue(X,N10), N10>0.96. 
-	
-</code>
+This is the simplest method. After training a model with `.fit()`, you can remove any rules that fall below a certain confidence threshold. This is useful for cleaning up a model by discarding low-confidence, potentially noisy rules.
 
-### Testing in Python
-Given **X_test**, a list of test data samples, the Python **predict** function will predict the classification outcome for each of these data samples. 
+```python
+from algo import prune_rules
 
-<code>
-	
-	Y_test_hat = model.predict(X_test)
+# Assume 'model' has been trained with model.fit(data_train)
+print("Original number of rules:", len(model.rules))
 
-</code>
+# Prune rules with confidence less than 0.75
+model.rules = prune_rules(model.rules, confidence=0.75)
 
-The **classify** function can also be used to classify a single data sample.
-	
-<code>
-	
-	y_test_hat = model.classify(x_test)
+print("Number of rules after pruning:", len(model.rules))
+```
 
-</code>
-	
-### Explanation
+**2. Confidence-Driven Learning with `confidence_fit`**
 
-FOLD-RM provides simple format justification and rebuttal for predictions with **explain** function. 
+A more advanced and integrated method is to use `.confidence_fit()`. This method only adds exceptions to rules *during the training process* if they improve the rule's confidence by a specified `improvement_threshold`. This prevents the model from learning overly specific exceptions in the first place, often leading to simpler and more general models from the outset.
 
-<code>
-	
-	model.explain(X_test[i])
-	
-</code>
+```python
+# Train the model using the confidence-driven method
+# Only add exceptions if they improve confidence by at least 2% (0.02)
+model.confidence_fit(data_train, improvement_threshold=0.02)
 
-Here is a generated justification for an instance prediction in the example above:
+# The resulting model.rules will likely be simpler and more robust
+model.print_asp(simple=True)
+```
 
-<code>
-	
-    Explanation for example number 1 :
-    [F]ab1(X) :- [F]proline(X,N12), N12=<678.0. 
-    [T]rule2(X) :- [T]flavanoids(X,N6), N6>2.03, not [F]ab1(X). 
-    [F]rule1(X) :- [F]color_intensity(X,N9), N9=<3.4. 
-    [T]label(X,'1') :- [T]rule2(X), not [F]rule1(X). 
-    {'color_intensity: 6.38', 'proline: 970.0', 'flavanoids: 3.0'}   
+### Loading Rules from a File
+For automated experiments, you can load rules from a text file. Our example script examples/run_experiment.py demonstrates this
 
-</code>
+1. Create a rule file (e.g., my_rules.txt)
+The file should contain one rule per line. Lines starting with # are treated as comments and ignored.
 
-In the generated answers, each literal has been tagged with a label. **[T]** means True, **[F]** means False, and **[U]** means unnecessary to evaluate. And the smallest set of features of the instance is listed for each answer.
+```python
+# Rules for the mushroom dataset. Lines starting with # are ignored.
+with confidence 0.99 class = 'p' if 'odor' '==' 'f'
+```
 
-## Citations
+2. Run the experiment script
+The script allows you to specify the dataset and an optional rules file from the command line.
 
-<code>
-	
-	@misc{wang2022foldrm,
-	      title={FOLD-RM: A Scalable and Efficient Inductive Learning Algorithm for Multi-Category Classification of Mixed Data}, 
-	      author={Huaduo Wang and Farhad Shakerin and Gopal Gupta},
-	      year={2022},
-	      eprint={2202.06913},
-	      archivePrefix={arXiv},
-	      primaryClass={cs.LG}
-	}
-	
-</code>
-	
-<code>
-	
-	@misc{wang2021foldr,
-	      title={FOLD-R++: A Scalable Toolset for Automated Inductive Learning of Default Theories from Mixed Data}, 
-	      author={Huaduo Wang and Gopal Gupta},
-	      year={2021},
-	      eprint={2110.07843},
-	      archivePrefix={arXiv},
-	      primaryClass={cs.LG}
-	}
-	
-</code>
+
+```python
+# Run on the mushroom dataset with your expert rules
+python examples/run_experiment.py mushroom --rules examples/my_rules.txt
+```
+
+## CON-FOLD Citation
+
+@article{mcginness2024confold,
+  author    = {McGinness, Lachlan and Baumgartner, Peter},
+  title     = {{CON-FOLD}: {E}xplainable {M}achine {L}earning with {C}onfidence},
+  journal   = {Theory and Practice of Logic Programming},
+  volume    = {24},
+  number    = {4},
+  pages     = {663--681},
+  year      = {2024},
+  publisher = {Cambridge University Press}
+}
+
+which can also be viewed as a pre-print here:
+
+@misc{mcginness2024confold_arxiv,
+  title         = {{CON-FOLD} -- {E}xplainable {M}achine {L}earning with {C}onfidence}, 
+  author        = {McGinness, Lachlan and Baumgartner, Peter},
+  year          = {2024},
+  eprint        = {2408.07854},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI}
+}
+
+## Original FOLD-RM Citations
+
+@misc{wang2022foldrm,
+      title={FOLD-RM: A Scalable and Efficient Inductive Learning Algorithm for Multi-Category Classification of Mixed Data}, 
+      author={Huaduo Wang and Farhad Shakerin and Gopal Gupta},
+      year={2022},
+      eprint={2202.06913},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+
+
+@misc{wang2021foldr,
+      title={FOLD-R++: A Scalable Toolset for Automated Inductive Learning of Default Theories from Mixed Data}, 
+      author={Huaduo Wang and Gopal Gupta},
+      year={2021},
+      eprint={2110.07843},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
