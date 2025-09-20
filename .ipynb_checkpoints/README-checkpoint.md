@@ -25,10 +25,6 @@ This repository is based on the original FOLD-RM work by Huaduo Wang, available 
     ```bash
     pip install -r requirements.txt
     ```    
-    You may also need to download the SpaCy English model if you are doing natural language processing:
-    ```bash
-    python -m spacy download en_core_web_sm
-    ```
 
 ## Quick Start: Adding Expert Rules
 
@@ -72,7 +68,7 @@ CON-FOLD includes methods for pruning the learned ruleset to create simpler, mor
 
 There are two primary methods for pruning:
 
-**1. Post-Hoc Confidence Pruning**
+**1. Post-Hoc Confidence Pruning (Confidence Threshold Pruning)**
 
 This is the simplest method. After training a model with `.fit()`, you can remove any rules that fall below a certain confidence threshold. This is useful for cleaning up a model by discarding low-confidence, potentially noisy rules.
 
@@ -88,7 +84,7 @@ model.rules = prune_rules(model.rules, confidence=0.75)
 print("Number of rules after pruning:", len(model.rules))
 ```
 
-**2. Confidence-Driven Learning with `confidence_fit`**
+**2. Confidence-Driven Learning with `confidence_fit` (Improvement Threshold Pruning)**
 
 A more advanced and integrated method is to use `.confidence_fit()`. This method only adds exceptions to rules *during the training process* if they improve the rule's confidence by a specified `improvement_threshold`. This prevents the model from learning overly specific exceptions in the first place, often leading to simpler and more general models from the outset.
 
@@ -123,6 +119,7 @@ python examples/run_experiment.py mushroom --rules examples/my_rules.txt
 
 ## CON-FOLD Citation
 
+```code
 @article{mcginness2024confold,
   author    = {McGinness, Lachlan and Baumgartner, Peter},
   title     = {{CON-FOLD}: {E}xplainable {M}achine {L}earning with {C}onfidence},
@@ -133,9 +130,11 @@ python examples/run_experiment.py mushroom --rules examples/my_rules.txt
   year      = {2024},
   publisher = {Cambridge University Press}
 }
+```
 
 which can also be viewed as a pre-print here:
 
+```code
 @misc{mcginness2024confold_arxiv,
   title         = {{CON-FOLD} -- {E}xplainable {M}achine {L}earning with {C}onfidence}, 
   author        = {McGinness, Lachlan and Baumgartner, Peter},
@@ -144,9 +143,11 @@ which can also be viewed as a pre-print here:
   archivePrefix = {arXiv},
   primaryClass  = {cs.AI}
 }
+```
 
 ## Original FOLD-RM Citations
 
+```code
 @misc{wang2022foldrm,
       title={FOLD-RM: A Scalable and Efficient Inductive Learning Algorithm for Multi-Category Classification of Mixed Data}, 
       author={Huaduo Wang and Farhad Shakerin and Gopal Gupta},
@@ -155,8 +156,9 @@ which can also be viewed as a pre-print here:
       archivePrefix={arXiv},
       primaryClass={cs.LG}
 }
+```
 
-
+```code
 @misc{wang2021foldr,
       title={FOLD-R++: A Scalable Toolset for Automated Inductive Learning of Default Theories from Mixed Data}, 
       author={Huaduo Wang and Gopal Gupta},
@@ -165,3 +167,4 @@ which can also be viewed as a pre-print here:
       archivePrefix={arXiv},
       primaryClass={cs.LG}
 }
+```
