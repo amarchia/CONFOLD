@@ -26,6 +26,16 @@ This repository is based on the original FOLD-RM work by Huaduo Wang, available 
     pip install -r requirements.txt
     ```    
 
+## Tutorial: A Complete Walkthrough
+
+For a complete, step-by-step guide on how to use CON-FOLD, please see our detailed Jupyter Notebook tutorial. It provides a hands-on example that covers:
+1.  Training a baseline model from scratch.
+2.  Injecting expert domain knowledge (with and without pre-defined confidence).
+3.  Pruning the model to improve simplicity and prevent overfitting.
+4.  Comparing the results to see the benefits.
+
+**[View the Birds of Prey Tutorial](./examples/1_birds_of_prey_tutorial.ipynb)**
+
 ## Quick Start: Adding Expert Rules
 
 The core feature of CON-FOLD is adding domain knowledge. You can provide rules with a pre-defined confidence, or let the model learn the confidence for you.
@@ -117,12 +127,176 @@ The script allows you to specify the dataset and an optional rules file from the
 python examples/run_experiment.py mushroom --rules examples/my_rules.txt
 ```
 
+## Tutorial Walkthrough and Output
+
+The following is a summary of the code and output from the main tutorial, `1_birds_of_prey_tutorial.ipynb`.
+
+### Step 1: Load and Prepare the Data
+We load a custom dataset of 20 birds and split it into a 15-bird training set and a 5-bird test set.
+
+```python
+# Load the data
+model_template, data = birds(data_path='../data/birds/birds.csv')
+
+# Split into training and testing sets
+data_train = data[:15]
+data_test = data[15:]
+```
+```code
+% birds dataset loaded (20, 3)
+Training set size: 15 birds
+Testing set size: 5 birds
+```
+
+### Step 2: The Baseline Model
+We train a standard model to see what it can learn on its own.
+
+```python
+# Instantiate and fit the baseline model
+baseline_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+baseline_model.fit(data_train, ratio=0.5)
+baseline_model.print_asp(simple=True)
+```
+```code
+--- Rules Learned by the Baseline Model ---
+predator(X,'yes') :- not beak(X,'curved'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.7]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=20.0.
+```
+The baseline model achieves 80% accuracy, incorrectly classifying one of the test birds.
+
+### Step 3 & 4: Injecting an Expert Rule
+We provide a single, nuanced rule to the model before training it again.
+
+```python
+# Instantiate a new model and add our expert rule
+expert_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+expert_rule = "with confidence 0.95 class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+expert_model.add_manual_rule(expert_rule, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+
+# Fit the model on the same data
+expert_model.fit(data_train, ratio=0.75)
+expert_model.print_asp(simple=True)
+```
+```code
+--- Final Ruleset from the Expert Model ---
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.95]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.7]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+
+By providing the difficult rule, the expert-guided model achieves 100% accuracy.
+
+### Step 5: Learning Rule Confidence
+We show that you can provide rules without confidence scores and let CON-FOLD calculate them from the data.
+
+```python
+# Add rules without confidence
+rule1 = "class = 'no' if 'beak' '==' 'Curved'"
+rule2 = "class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+# ... add rules to a new model ...
+
+# Fit the model
+learned_confidence_model.fit(data_train, ratio=0.5)
+learned_confidence_model.print_asp(simple=True)
+```
+```code
+--- Final Ruleset with Learned Confidence ---
+The confidence values have now been updated based on the training data!
+predator(X,'no') :- beak(X,'curved'). [confidence: 0.65385]
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.59091]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+This model also achieves 100% accuracy.
+
+### Step 6: Adding Expert Rules and Learning Their Confidence
+
+A common scenario is that an expert knows a rule is generally true, but doesn't know the exact statistics or confidence.
+
+CON-FOLD is designed for this. We can provide rules without a confidence value, and the algorithm will **calculate the confidence for us** based on the training data.
+
+Let's provide two rules our ornithologist is fairly certain about:
+1.  **"Birds with a curved beak are not predators."**
+2.  **"A bird with a sharp beak is a predator, UNLESS it is very small (wingspan <= 25cm)."**
+
+```python
+# Instantiate a new classifier
+learned_confidence_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+
+# Define our expert rules as strings, but WITHOUT the 'with confidence' part.
+rule1_no_confidence = "class = 'no' if 'beak' '==' 'Curved'"
+rule2_no_confidence = "class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+
+# Add the manual rules to the model
+learned_confidence_model.add_manual_rule(rule1_no_confidence, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+learned_confidence_model.add_manual_rule(rule2_no_confidence, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+
+print("--- Manual Rules Added (Before Training) ---")
+print("Notice the default confidence value of 0.5 assigned to each rule.")
+for rule in learned_confidence_model.rules:
+    print(rule)
+```
+```code
+--- Manual Rules Added (Before Training) ---
+Notice the default confidence value of 0.5 assigned to each rule.
+((-1, '==', 'no'), [(1, '==', 'Curved')], [], 0.5)
+((-1, '==', 'yes'), [(1, '==', 'Sharp')], [(-1, [(0, '<=', 25)], [], 0)], 0.5)
+```
+
+### Learned Confidence from Data
+As we saw above, the rules were added with a placeholder confidence of `0.5`. Now, when we call `.fit()`, CON-FOLD will evaluate these rules against the training data and replace the placeholder with a properly calculated confidence score.
+
+```python
+# Now, fit the model on the training data.
+# The algorithm will calculate the confidence of our provided rules and then learn any additional rules needed.
+learned_confidence_model.fit(data_train, ratio=0.5)
+
+# Print the final, combined rule set
+print("--- Final Ruleset with Learned Confidence ---")
+print("The confidence values have now been updated based on the training data!")
+learned_confidence_model.print_asp(simple=True)
+#Note that confidence values will be relatively low due to the small size of the training data. 
+```
+```code
+--- Final Ruleset with Learned Confidence ---
+The confidence values have now been updated based on the training data!
+predator(X,'no') :- beak(X,'curved'). [confidence: 0.65385]
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.59091]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+
+```python
+# Get predictions from our new model
+learned_conf_predictions = learned_confidence_model.predict(X_test)
+learned_conf_labels = [p[0] for p in learned_conf_predictions]
+
+# Calculate accuracy
+learned_conf_accuracy = sum(1 for i in range(len(Y_test)) if learned_conf_labels[i] == Y_test[i]) / len(Y_test)
+
+print("--- Learned Confidence Model Evaluation ---")
+print(f"True Labels:      {Y_test}")
+print(f"Predicted Labels: {learned_conf_labels}")
+print(f"Accuracy: {learned_conf_accuracy * 100:.2f}%")
+```
+```code
+--- Learned Confidence Model Evaluation ---
+True Labels:      ['yes', 'no', 'no', 'yes', 'no']
+Predicted Labels: ['yes', 'no', 'no', 'yes', 'no']
+Accuracy: 100.00%
+```
+
 ## CON-FOLD Citation
 
 ```code
 @article{mcginness2024confold,
   author    = {McGinness, Lachlan and Baumgartner, Peter},
-  title     = {{CON-FOLD}: {E}xplainable {M}achine {L}earning with {C}onfidence},
+  title     = {CON-FOLD: Explainable Machine Learning with Confidence},
   journal   = {Theory and Practice of Logic Programming},
   volume    = {24},
   number    = {4},
@@ -136,7 +310,7 @@ which can also be viewed as a pre-print here:
 
 ```code
 @misc{mcginness2024confold_arxiv,
-  title         = {{CON-FOLD} -- {E}xplainable {M}achine {L}earning with {C}onfidence}, 
+  title         = {CON-FOLD: Explainable Machine Learning with Confidence}, 
   author        = {McGinness, Lachlan and Baumgartner, Peter},
   year          = {2024},
   eprint        = {2408.07854},
