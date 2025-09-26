@@ -26,12 +26,10 @@ def extinction():
              "LogHumanPopulationDensity"]
 
     model = Classifier(attrs=attrs, numeric=nums, label="Threat")
-    data = model.load_data('AvoIUCNbehavMig.csv')
+    data_path = os.path.join(os.path.dirname(__file__), 'AvoIUCNbehavMig.csv')
+    data = model.load_data(data_path)
     print('\n% dataset', np.shape(data))
     return model, data
-
-
-
 
 model, data = extinction()
 
