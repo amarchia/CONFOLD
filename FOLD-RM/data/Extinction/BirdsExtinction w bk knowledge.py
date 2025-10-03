@@ -4,7 +4,7 @@
 
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../')))
-
+mypath = os.path.dirname(__file__)
 import sys
 sys.path.append(r'...')
 
@@ -14,7 +14,7 @@ from datasets import extinctionbirds # Our new function
 from utils import split_data # Or your stratified version if you prefer
 
 # Load the data
-model_template, data = extinctionbirds(data_path='/home/pabmevi/CONFOLD/FOLD-RM/data/Extinction/AvoIUCNbehavMig.csv')
+model_template, data = extinctionbirds(data_path=os.path.join(mypath, 'AvoIUCNbehavMig.csv'))
 
 # Split into training and testing sets
 train_data, test_data = split_data(data, ratio=0.9, shuffle=True)
