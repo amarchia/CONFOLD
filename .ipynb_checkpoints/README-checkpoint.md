@@ -1,154 +1,344 @@
-# CON-FOLD and FOLD-RM
-The implementation details of CON-FOLD and FOLD-RM algorithm and how to use it are described here. The target of these algorithms is to learn an answer set program for a classification task. Answer set programs are logic programs that permit negation of predicates and follow the stable model semantics for interpretation. 
+# CON-FOLD: An Explainable Learning Algorithm with Confidence and Domain Knowledge
+CON-FOLD is a Python implementation of an explainable machine learning algorithm that extends the original FOLD-RM algorithm. It generates human-readable logic rules for classification tasks and introduces two key enhancements:
+
+1.  **Confidence Scores:** Every prediction is accompanied by a confidence value, allowing users to gauge the model's certainty.
+2.  **Domain Knowledge Injection:** You can easily inject expert knowledge into the model using simple, human-readable rule strings. The algorithm then learns around this expert knowledge, combining human intuition with machine learning.
+
+This repository is based on the original FOLD-RM work by Huaduo Wang, available [here](https://github.com/hwd404/FOLD-RM).
+
+## Key Features
+
+*   **Explainable by Design:** The model's output is a set of logic rules that are easy for humans to understand and verify.
+*   **Confidence-Aware:** Provides confidence scores for its predictions using the Wilson score interval.
+*   **Expert-in-the-Loop:** Seamlessly integrate expert knowledge to improve model accuracy and interpretability.
+*   **Handles Mixed Data:** Works directly with both numerical and categorical data without requiring one-hot encoding.
 
 ## Installation
 
-Only function library for FOLD-RM:
-<code>
-	
-	python3 -m pip install foldrm
-	
-</code>
+1.  Clone the repository to your local machine:
+    ```bash
+    git clone https://github.com/lachlanmcg123/CONFOLD.git
+    cd CONFOLD
+    ```
 
-With the dataset examples:
-<code>
-	
-	git clone https://github.com/hwd404/FOLD-RM.git
-	
-</code>
+2.  Install the required Python libraries using the `requirements.txt` file:
+    ```bash
+    pip install -r requirements.txt
+    ```    
 
-### Prerequisites
-The CON-FOLD and FOLD-RM algorithm is developed with python3.10.
+## Tutorial: A Complete Walkthrough
 
-## Instruction
-### Data preparation
+For a complete, step-by-step guide on how to use CON-FOLD, please see our detailed Jupyter Notebook tutorial. It provides a hands-on example that covers:
+1.  Training a baseline model from scratch.
+2.  Injecting expert domain knowledge (with and without pre-defined confidence).
+3.  Pruning the model to improve simplicity and prevent overfitting.
+4.  Comparing the results to see the benefits.
 
-The CON-FOLD and FOLD-RM take tabular data as input, the first line for the tabular data should be the feature names of each column.
-The algorithms do not have to encode the data for training. It can deal with numerical, categorical, and even mixed type features (one column contains both categorical and numerical values) directly.
-However, the numerical features should be identified before loading the data, otherwise they would be dealt like categorical features (only literals with = and != would be generated).
+**[View the Birds of Prey Tutorial](./examples/1_birds_of_prey_tutorial.ipynb)**
 
-There are many UCI example datasets that have been used to pre-populate the **data** directory. Code for preparing these datasets has already been added to datasets.py.
+## Quick Start: Adding Expert Rules
 
-For example, the UCI wine dataset can be loaded with the following code:
+The core feature of CON-FOLD is adding domain knowledge. You can provide rules with a pre-defined confidence, or let the model learn the confidence for you.
 
-<code>
-	
-    attrs = ['alcohol','malic_acid','ash','alcalinity_of_ash','magnesium','tot_phenols','flavanoids',
-    'nonflavanoid_phenols','proanthocyanins','color_intensity','hue','OD_of_diluted','proline']
-    model = Classifier(attrs=attrs, numeric=attrs, label='label')
-    data = model.load_data('data/wine/wine.csv')
-    print('\n% wine dataset', np.shape(data))
-    return model, data
+### Option 1: Provide a Rule with a Confidence Score
 
-</code>
+If you are confident in your rule, you can specify its confidence directly.
 
-**attrs** lists all the features needed, **nums** lists all the numerical features, **label** is the name of the output classification label, **model** is an initialized classifier object with the configuration of wine dataset. 
+```python
+# Define and add your expert rule with a specific confidence
+expert_rule = "with confidence 0.95 class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+model.add_manual_rule(expert_rule, model.attrs, model.numeric, labels=['yes', 'no'])
 
-### Training
-The CON-FOLD and FOLD-RM algorithms generate explainable models that are represented by an answer set program for classification tasks. Here's a training example for wine dataset:
+# The model will use this confidence value directly
+model.fit(data_train)
+```
 
-<code>
-	
-    model.fit(X_train, Y_train, ratio=0.9)
-	
-</code>
+### Option 2: Let CON-FOLD Learn the Confidence
+If you know a rule is correct but are unsure of its exact confidence, simply leave it out. CON-FOLD will calculate it from the training data when you call .fit().
+```python
+# 1. Define a rule WITHOUT a confidence value
+rule_without_confidence = "class = 'no' if 'beak' '==' 'Curved'"
 
-Note that the hyperparameter **ratio** in **fit** function can be set by the user, and ranges between 0 and 1. Default value is 0.5. This hyperparameter represents the ratio of training examples that are part of the exception to the examples implied by only the default conclusion part of the rule. We recommend that the user experiment with this hyperparameter by trying different values to produce a ruleset with the best F1 score. A range between 0.5 and 0.9 is recommended for experimentation.
+# 2. Add the rule. It will be assigned a default confidence of 0.5 for now.
+model.add_manual_rule(rule_without_confidence, model.attrs, model.numeric, labels=['yes', 'no'])
 
-The rules generated will be stored in the model object. These rules are organized in a nested intermediate representation. The nested rules will be automatically flattened and decoded to conform to the syntax of answer set programs by calling **print_asp** function: 
+# 3. Fit the model. 
+# CON-FOLD will now calculate the true confidence of your rule from the data.
+model.fit(data_train)
 
-<code>
-	
-    model.print_asp()
-	
-</code>
+# 4. Print the rules to see the newly learned confidence score.
+model.print_asp(simple=True)
+```
 
-An answer set program, compatible with the s(CASP) answer set programming system, is printed as shown below. The s(CASP) system is a system for direclty executing predicate answer set programs in a query-driven manner.
+## Advanced Usage: Pruning and Rule Files
 
-<code>
+CON-FOLD includes methods for pruning the learned ruleset to create simpler, more robust models. This helps to prevent overfitting and can improve the interpretability of the final model.
 
-    % wine dataset (178, 14)
-    label(X,'1') :- rule2(X), not rule1(X). 
-    label(X,'2') :- rule1(X). 
-    label(X,'2') :- rule4(X), not rule1(X), not rule2(X), not rule3(X). 
-    label(X,'2') :- rule5(X), not rule1(X), not rule2(X), not rule3(X), not rule4(X). 
-    label(X,'3') :- rule3(X), not rule1(X), not rule2(X). 
-    rule1(X) :- color_intensity(X,N9), N9=<3.4. 
-    rule2(X) :- flavanoids(X,N6), N6>2.03, not ab1(X). 
-    rule3(X) :- flavanoids(X,N6), N6=<1.57, not ab2(X). 
-    rule4(X) :- alcohol(X,N0), N0>11.56. 
-    rule5(X) :- alcohol(X,N0), N0=<11.56. 
-    ab1(X) :- proline(X,N12), N12=<678.0. 
-    ab2(X) :- hue(X,N10), N10>0.96. 
-	
-</code>
+### Pruning Learned Rules
 
-### Testing in Python
-Given **X_test**, a list of test data samples, the Python **predict** function will predict the classification outcome for each of these data samples. 
+There are two primary methods for pruning:
 
-<code>
-	
-	Y_test_hat = model.predict(X_test)
+**1. Post-Hoc Confidence Pruning (Confidence Threshold Pruning)**
 
-</code>
+This is the simplest method. After training a model with `.fit()`, you can remove any rules that fall below a certain confidence threshold. This is useful for cleaning up a model by discarding low-confidence, potentially noisy rules.
 
-The **classify** function can also be used to classify a single data sample.
-	
-<code>
-	
-	y_test_hat = model.classify(x_test)
+```python
+from algo import prune_rules
 
-</code>
-	
-### Explanation
+# Assume 'model' has been trained with model.fit(data_train)
+print("Original number of rules:", len(model.rules))
 
-FOLD-RM provides simple format justification and rebuttal for predictions with **explain** function. 
+# Prune rules with confidence less than 0.75
+model.rules = prune_rules(model.rules, confidence=0.75)
 
-<code>
-	
-	model.explain(X_test[i])
-	
-</code>
+print("Number of rules after pruning:", len(model.rules))
+```
 
-Here is a generated justification for an instance prediction in the example above:
+**2. Confidence-Driven Learning with `confidence_fit` (Improvement Threshold Pruning)**
 
-<code>
-	
-    Explanation for example number 1 :
-    [F]ab1(X) :- [F]proline(X,N12), N12=<678.0. 
-    [T]rule2(X) :- [T]flavanoids(X,N6), N6>2.03, not [F]ab1(X). 
-    [F]rule1(X) :- [F]color_intensity(X,N9), N9=<3.4. 
-    [T]label(X,'1') :- [T]rule2(X), not [F]rule1(X). 
-    {'color_intensity: 6.38', 'proline: 970.0', 'flavanoids: 3.0'}   
+A more advanced and integrated method is to use `.confidence_fit()`. This method only adds exceptions to rules *during the training process* if they improve the rule's confidence by a specified `improvement_threshold`. This prevents the model from learning overly specific exceptions in the first place, often leading to simpler and more general models from the outset.
 
-</code>
+```python
+# Train the model using the confidence-driven method
+# Only add exceptions if they improve confidence by at least 2% (0.02)
+model.confidence_fit(data_train, improvement_threshold=0.02)
 
-In the generated answers, each literal has been tagged with a label. **[T]** means True, **[F]** means False, and **[U]** means unnecessary to evaluate. And the smallest set of features of the instance is listed for each answer.
+# The resulting model.rules will likely be simpler and more robust
+model.print_asp(simple=True)
+```
 
-## Citations
+### Loading Rules from a File
+For automated experiments, you can load rules from a text file. Our example script examples/run_experiment.py demonstrates this
 
-<code>
-	
-	@misc{wang2022foldrm,
-	      title={FOLD-RM: A Scalable and Efficient Inductive Learning Algorithm for Multi-Category Classification of Mixed Data}, 
-	      author={Huaduo Wang and Farhad Shakerin and Gopal Gupta},
-	      year={2022},
-	      eprint={2202.06913},
-	      archivePrefix={arXiv},
-	      primaryClass={cs.LG}
-	}
-	
-</code>
-	
-<code>
-	
-	@misc{wang2021foldr,
-	      title={FOLD-R++: A Scalable Toolset for Automated Inductive Learning of Default Theories from Mixed Data}, 
-	      author={Huaduo Wang and Gopal Gupta},
-	      year={2021},
-	      eprint={2110.07843},
-	      archivePrefix={arXiv},
-	      primaryClass={cs.LG}
-	}
-	
-</code>
+1. Create a rule file (e.g., my_rules.txt)
+The file should contain one rule per line. Lines starting with # are treated as comments and ignored.
+
+```python
+# Rules for the mushroom dataset. Lines starting with # are ignored.
+with confidence 0.99 class = 'p' if 'odor' '==' 'f'
+```
+
+2. Run the experiment script
+The script allows you to specify the dataset and an optional rules file from the command line.
+
+
+```python
+# Run on the mushroom dataset with your expert rules
+python examples/run_experiment.py mushroom --rules examples/my_rules.txt
+```
+
+## Tutorial Walkthrough and Output
+
+The following is a summary of the code and output from the main tutorial, `1_birds_of_prey_tutorial.ipynb`.
+
+### Step 1: Load and Prepare the Data
+We load a custom dataset of 20 birds and split it into a 15-bird training set and a 5-bird test set.
+
+```python
+# Load the data
+model_template, data = birds(data_path='../data/birds/birds.csv')
+
+# Split into training and testing sets
+data_train = data[:15]
+data_test = data[15:]
+```
+```code
+% birds dataset loaded (20, 3)
+Training set size: 15 birds
+Testing set size: 5 birds
+```
+
+### Step 2: The Baseline Model
+We train a standard model to see what it can learn on its own.
+
+```python
+# Instantiate and fit the baseline model
+baseline_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+baseline_model.fit(data_train, ratio=0.5)
+baseline_model.print_asp(simple=True)
+```
+```code
+--- Rules Learned by the Baseline Model ---
+predator(X,'yes') :- not beak(X,'curved'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.7]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=20.0.
+```
+The baseline model achieves 80% accuracy, incorrectly classifying one of the test birds.
+
+### Step 3 & 4: Injecting an Expert Rule
+We provide a single, nuanced rule to the model before training it again.
+
+```python
+# Instantiate a new model and add our expert rule
+expert_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+expert_rule = "with confidence 0.95 class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+expert_model.add_manual_rule(expert_rule, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+
+# Fit the model on the same data
+expert_model.fit(data_train, ratio=0.75)
+expert_model.print_asp(simple=True)
+```
+```code
+--- Final Ruleset from the Expert Model ---
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.95]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.7]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+
+By providing the difficult rule, the expert-guided model achieves 100% accuracy.
+
+### Step 5: Learning Rule Confidence
+We show that you can provide rules without confidence scores and let CON-FOLD calculate them from the data.
+
+```python
+# Add rules without confidence
+rule1 = "class = 'no' if 'beak' '==' 'Curved'"
+rule2 = "class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+# ... add rules to a new model ...
+
+# Fit the model
+learned_confidence_model.fit(data_train, ratio=0.5)
+learned_confidence_model.print_asp(simple=True)
+```
+```code
+--- Final Ruleset with Learned Confidence ---
+The confidence values have now been updated based on the training data!
+predator(X,'no') :- beak(X,'curved'). [confidence: 0.65385]
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.59091]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+This model also achieves 100% accuracy.
+
+### Step 6: Adding Expert Rules and Learning Their Confidence
+
+A common scenario is that an expert knows a rule is generally true, but doesn't know the exact statistics or confidence.
+
+CON-FOLD is designed for this. We can provide rules without a confidence value, and the algorithm will **calculate the confidence for us** based on the training data.
+
+Let's provide two rules our ornithologist is fairly certain about:
+1.  **"Birds with a curved beak are not predators."**
+2.  **"A bird with a sharp beak is a predator, UNLESS it is very small (wingspan <= 25cm)."**
+
+```python
+# Instantiate a new classifier
+learned_confidence_model = Classifier(attrs=model_template.attrs, numeric=model_template.numeric, label=model_template.label)
+
+# Define our expert rules as strings, but WITHOUT the 'with confidence' part.
+rule1_no_confidence = "class = 'no' if 'beak' '==' 'Curved'"
+rule2_no_confidence = "class = 'yes' if 'beak' '==' 'Sharp' except if 'wingspan' '<=' '25'"
+
+# Add the manual rules to the model
+learned_confidence_model.add_manual_rule(rule1_no_confidence, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+learned_confidence_model.add_manual_rule(rule2_no_confidence, model_template.attrs, model_template.numeric, ['yes', 'no'], instructions=False)
+
+print("--- Manual Rules Added (Before Training) ---")
+print("Notice the default confidence value of 0.5 assigned to each rule.")
+for rule in learned_confidence_model.rules:
+    print(rule)
+```
+```code
+--- Manual Rules Added (Before Training) ---
+Notice the default confidence value of 0.5 assigned to each rule.
+((-1, '==', 'no'), [(1, '==', 'Curved')], [], 0.5)
+((-1, '==', 'yes'), [(1, '==', 'Sharp')], [(-1, [(0, '<=', 25)], [], 0)], 0.5)
+```
+
+### Learned Confidence from Data
+As we saw above, the rules were added with a placeholder confidence of `0.5`. Now, when we call `.fit()`, CON-FOLD will evaluate these rules against the training data and replace the placeholder with a properly calculated confidence score.
+
+```python
+# Now, fit the model on the training data.
+# The algorithm will calculate the confidence of our provided rules and then learn any additional rules needed.
+learned_confidence_model.fit(data_train, ratio=0.5)
+
+# Print the final, combined rule set
+print("--- Final Ruleset with Learned Confidence ---")
+print("The confidence values have now been updated based on the training data!")
+learned_confidence_model.print_asp(simple=True)
+#Note that confidence values will be relatively low due to the small size of the training data. 
+```
+```code
+--- Final Ruleset with Learned Confidence ---
+The confidence values have now been updated based on the training data!
+predator(X,'no') :- beak(X,'curved'). [confidence: 0.65385]
+predator(X,'yes') :- beak(X,'sharp'), not ab1(X). [confidence: 0.73529]
+predator(X,'no') :- wingspan(X,N0), N0>10.0. [confidence: 0.59091]
+predator(X,'no') :- wingspan(X,N0), N0<=10.0. [confidence: 0.55]
+ab1(X) :- wingspan(X,N0), N0<=25.
+```
+
+```python
+# Get predictions from our new model
+learned_conf_predictions = learned_confidence_model.predict(X_test)
+learned_conf_labels = [p[0] for p in learned_conf_predictions]
+
+# Calculate accuracy
+learned_conf_accuracy = sum(1 for i in range(len(Y_test)) if learned_conf_labels[i] == Y_test[i]) / len(Y_test)
+
+print("--- Learned Confidence Model Evaluation ---")
+print(f"True Labels:      {Y_test}")
+print(f"Predicted Labels: {learned_conf_labels}")
+print(f"Accuracy: {learned_conf_accuracy * 100:.2f}%")
+```
+```code
+--- Learned Confidence Model Evaluation ---
+True Labels:      ['yes', 'no', 'no', 'yes', 'no']
+Predicted Labels: ['yes', 'no', 'no', 'yes', 'no']
+Accuracy: 100.00%
+```
+
+## CON-FOLD Citation
+
+```code
+@article{mcginness2024confold,
+  author    = {McGinness, Lachlan and Baumgartner, Peter},
+  title     = {CON-FOLD: Explainable Machine Learning with Confidence},
+  journal   = {Theory and Practice of Logic Programming},
+  volume    = {24},
+  number    = {4},
+  pages     = {663--681},
+  year      = {2024},
+  publisher = {Cambridge University Press}
+}
+```
+
+which can also be viewed as a pre-print here:
+
+```code
+@misc{mcginness2024confold_arxiv,
+  title         = {CON-FOLD: Explainable Machine Learning with Confidence}, 
+  author        = {McGinness, Lachlan and Baumgartner, Peter},
+  year          = {2024},
+  eprint        = {2408.07854},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI}
+}
+```
+
+## Original FOLD-RM Citations
+
+```code
+@misc{wang2022foldrm,
+      title={FOLD-RM: A Scalable and Efficient Inductive Learning Algorithm for Multi-Category Classification of Mixed Data}, 
+      author={Huaduo Wang and Farhad Shakerin and Gopal Gupta},
+      year={2022},
+      eprint={2202.06913},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+
+```code
+@misc{wang2021foldr,
+      title={FOLD-R++: A Scalable Toolset for Automated Inductive Learning of Default Theories from Mixed Data}, 
+      author={Huaduo Wang and Gopal Gupta},
+      year={2021},
+      eprint={2110.07843},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```

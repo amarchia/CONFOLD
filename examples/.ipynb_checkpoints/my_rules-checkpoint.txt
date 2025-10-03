@@ -1,0 +1,1 @@
+with confidence 0.99 class = 'p' if 'odor' '==' 'f'

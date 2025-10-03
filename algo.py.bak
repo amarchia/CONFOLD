@@ -21,7 +21,44 @@ def calculate_confidence(tp, total, Z=3):
     return round(p, 5)
 
 
+def flatten_rules(rules):
+    abrules = []
+    ret = []
+    rule_map = dict()
+    flatten_rules.ab = -2
 
+    def _eval(i):
+        if isinstance(i, tuple) and len(i) == 3:
+            return i
+        elif isinstance(i, tuple):
+            return _func(i)
+
+    def _func(rule, root=False):
+        # Assuming confidence intervals are the last two elements of the rule tuple,
+        # Extract the rule conditions (excluding the confidence intervals for mapping).
+        conditions = rule[:-1]
+        confidence = rule[-1]
+
+        t = (tuple(conditions[1]), tuple([_eval(i) for i in conditions[2]])) #A tuple of all conditions in rule including exceptions
+        if t not in rule_map:
+            rule_map[t] = conditions[0] if root else flatten_rules.ab
+            _ret = rule_map[t]
+            if root:
+                # Include confidence intervals when adding to `ret`.
+                ret.append((_ret, t[0], t[1], confidence))
+            else:
+                # Include confidence intervals when adding to `abrules`.
+                abrules.append((_ret, t[0], t[1], confidence))
+                flatten_rules.ab -= 1
+        elif root:
+            # Include confidence intervals when rule is already mapped.
+            ret.append((conditions[0], t[0], t[1], confidence))
+        return rule_map[t]
+
+    for r in rules:
+        _func(r, root=True)
+    final_output = ret + abrules
+    return final_output
 
 def add_constraint(rules):
     ret, abrules, rx = [], [], []
@@ -160,7 +197,28 @@ def evaluate(item, x):
 
 
 
-
+def foldrm(data, ratio=0.5, provided_literal = False):
+    ret = []
+    while len(data) > 0:
+        if provided_literal == False: #Determines which class to be evaluated next
+            target_class = most(data) #takes form -1 '==' label
+        else:
+            target_class = provided_literal
+        data_pos, data_neg = split_data_by_item(data, target_class) #Splits data into positive and negative examples according to chosen class
+        rule = learn_rule(data_pos, data_neg, [], ratio)
+        # Calculate confidence here
+        tp = len([d for d in data_pos if cover(rule, d)])  # True positives
+        total = tp + len([d for d in data_neg if cover(rule, d)])  # Total = TP + FP
+        confidence = calculate_confidence(tp, total)
+        # Attach label and confidence to rule
+        rule_with_confidence = tuple([target_class]) + rule[1:-1] + (confidence,) 
+        data_fn = [data_pos[i] for i in range(len(data_pos)) if not cover(rule, data_pos[i])]
+        if len(data_fn) == len(data_pos):
+            break
+        data_tn = [data_neg[i] for i in range(len(data_neg)) if not cover(rule, data_neg[i])]
+        data = data_fn + data_tn
+        ret.append(rule_with_confidence)  # Append rule with confidence
+    return ret
 
 def expand_rules(data, existing_rules, ratio=0.5, improvement_threshold = False):
     ret = []
@@ -618,28 +676,6 @@ def most(data, i=-1):
         if n <= tab[t]:
             y, n = t, tab[t]
     return i, '==', y #returns  -1 '==' most common label
-def foldrm(data, ratio=0.5, provided_literal = False):
-    ret = []
-    while len(data) > 0:
-        if provided_literal == False: #Determines which class to be evaluated next
-            target_class = most(data) #takes form -1 '==' label
-        else:
-            target_class = provided_literal
-        data_pos, data_neg = split_data_by_item(data, target_class) #Splits data into positive and negative examples according to chosen class
-        rule = learn_rule(data_pos, data_neg, [], ratio)
-        # Calculate confidence here
-        tp = len([d for d in data_pos if cover(rule, d)])  # True positives
-        total = tp + len([d for d in data_neg if cover(rule, d)])  # Total = TP + FP
-        confidence = calculate_confidence(tp, total)
-        # Attach label and confidence to rule
-        rule_with_confidence = tuple([target_class]) + rule[1:-1] + (confidence,) 
-        data_fn = [data_pos[i] for i in range(len(data_pos)) if not cover(rule, data_pos[i])]
-        if len(data_fn) == len(data_pos):
-            break
-        data_tn = [data_neg[i] for i in range(len(data_neg)) if not cover(rule, data_neg[i])]
-        data = data_fn + data_tn
-        ret.append(rule_with_confidence)  # Append rule with confidence
-    return ret
 
 def learn_rule(data_pos, data_neg, used_items=[], ratio=0.5):
     items = []
@@ -674,44 +710,6 @@ def fold(data_pos, data_neg, used_items=[], ratio=0.5):
     return ret
 
 
-def flatten_rules(rules):
-    abrules = []
-    ret = []
-    rule_map = dict()
-    flatten_rules.ab = -2
-
-    def _eval(i):
-        if isinstance(i, tuple) and len(i) == 3:
-            return i
-        elif isinstance(i, tuple):
-            return _func(i)
-
-    def _func(rule, root=False):
-        # Assuming confidence intervals are the last two elements of the rule tuple,
-        # Extract the rule conditions (excluding the confidence intervals for mapping).
-        conditions = rule[:-1]
-        confidence = rule[-1]
-
-        t = (tuple(conditions[1]), tuple([_eval(i) for i in conditions[2]])) #A tuple of all conditions in rule including exceptions
-        if t not in rule_map:
-            rule_map[t] = conditions[0] if root else flatten_rules.ab
-            _ret = rule_map[t]
-            if root:
-                # Include confidence intervals when adding to `ret`.
-                ret.append((_ret, t[0], t[1], confidence))
-            else:
-                # Include confidence intervals when adding to `abrules`.
-                abrules.append((_ret, t[0], t[1], confidence))
-                flatten_rules.ab -= 1
-        elif root:
-            # Include confidence intervals when rule is already mapped.
-            ret.append((conditions[0], t[0], t[1], confidence))
-        return rule_map[t]
-
-    for r in rules:
-        _func(r, root=True)
-    final_output = ret + abrules
-    return final_output
 def justify(rs, x, idx=-1, pos=[]):
     for j in range(len(rs)):
         r = rs[j]

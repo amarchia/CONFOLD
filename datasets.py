@@ -1,15 +1,14 @@
 from foldrm import Classifier
 import numpy as np
 
-def birds():
-    attrs: ['wingspan', 'beak']
-    nums: ['wingspan']
-    model = Classifier(attrs=attrs, numeric=nums, label='predator')
-    data = model.load_data('data/birds/birds.csv')
-    print('\n% birds dataset', np.shape(data))
+def birds(data_path='data/birds/birds.csv'): 
+    attrs = ['wingspan', 'beak']
+    nums = ['wingspan']
+    label = 'predator'
+    model = Classifier(attrs=attrs, numeric=nums, label=label)
+    data = model.load_data(data_path) # Use the argument here
+    print('\n% birds dataset loaded', np.shape(data))
     return model, data
-
-
 
 def acute():
     attrs = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6']
